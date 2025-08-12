@@ -20,7 +20,8 @@ RUN pip install -r requirements.txt
 
 # Copy the app code
 COPY . .
-
+# Default for local Docker -> host machine
+ENV OLLAMA_HOST=http://host.docker.internal:11434
 # Expose FastAPI port
 EXPOSE 8000
 

@@ -2,6 +2,7 @@ import os
 import json
 import ollama
 from fastapi import APIRouter, HTTPException
+from ollama_client import ollama_client
 from backend.services.process_text import (
     split_into_chunks,
     generate_summary,
@@ -15,10 +16,6 @@ router = APIRouter()
 RAW_TEXT_DIR = "backend/storage/extracted_texts"
 PROCESSED_DIR = "backend/storage/processed_contracts"
 os.makedirs(PROCESSED_DIR, exist_ok=True)
-
-# Explicitly set the base URL so Docker can talk to the host
-ollama_host = "http://host.docker.internal:11434"  # This special DNS points from Docker to your host machine
-ollama_client = ollama.Client(host=ollama_host)
 
 @router.post("/process/{contract_id}")
 def process_contract_route(contract_id: str):

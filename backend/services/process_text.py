@@ -6,6 +6,7 @@ import faiss
 import tiktoken
 import ollama
 from sentence_transformers import SentenceTransformer
+from ollama_client import ollama_client
 
 # Directories for FAISS index and chunk metadata
 INDEX_DIR = "backend/storage/indexes"
@@ -14,9 +15,7 @@ os.makedirs(INDEX_DIR, exist_ok=True)
 os.makedirs(META_DIR, exist_ok=True)
 
 
-# Explicitly set the base URL so Docker can talk to the host
-ollama_host = "http://host.docker.internal:11434"  # This special DNS points from Docker to your host machine
-ollama_client = ollama.Client(host=ollama_host)
+
 
 # Initialize tokenizer and embedding model
 tokenizer = tiktoken.get_encoding('cl100k_base')
