@@ -1,19 +1,19 @@
 import os
 import re
 import json
+import tempfile
+import boto3
 import numpy as np
 import faiss
 import tiktoken
-import boto3
 from sentence_transformers import SentenceTransformer
 from backend.ollama_client import ollama_client
 
-# AWS S3 setup - change bucket and region
-S3_BUCKET_NAME = "my-legal-ai-app-bucket"
-AWS_REGION = "us-east-1"
-s3_client = boto3.client("s3", region_name=AWS_REGION)
+# AWS S3 client (uses IAM role or env vars automatically)
+s3 = boto3.client('s3')
+S3_BUCKET = os.environ.get('my-legal-ai-app-bucket')  # Set this env var on EC2 or in Docker
 
-# Directories still needed locally if you want caching/fallback (optional)
+# Local temp directories (used just temporarily)
 INDEX_DIR = "backend/storage/indexes"
 META_DIR = "backend/storage/metadata"
 os.makedirs(INDEX_DIR, exist_ok=True)
@@ -22,21 +22,24 @@ os.makedirs(META_DIR, exist_ok=True)
 tokenizer = tiktoken.get_encoding('cl100k_base')
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Your existing split_into_chunks and generate_summary unchanged
+
 def split_into_chunks(text: str, max_tokens=512) -> list[str]:
     pattern = r"(?=\n?\d+\.\s[A-Z])"
     clauses = re.split(pattern, text)
     clauses = [c.strip() for c in clauses if c.strip()]
     if len(clauses) > 1:
         return clauses
+
     paragraphs = re.split(r'\n\s*\n+', text.strip())
     chunks = []
     current_chunk = ""
     current_tokens = 0
+
     for para in paragraphs:
         para = para.strip()
         if not para:
             continue
+
         para_tokens = tokenizer.encode(para)
         if current_tokens + len(para_tokens) <= max_tokens:
             current_chunk += "\n" + para
@@ -46,12 +49,16 @@ def split_into_chunks(text: str, max_tokens=512) -> list[str]:
                 chunks.append(current_chunk.strip())
             current_chunk = para
             current_tokens = len(para_tokens)
+
     if current_chunk:
         chunks.append(current_chunk.strip())
+
     return chunks
+
 
 def generate_embedding(text: str) -> np.ndarray:
     return embedding_model.encode(text, convert_to_numpy=True).astype('float32')
+
 
 def generate_summary(text: str) -> str:
     response = ollama_client.chat(
@@ -76,40 +83,55 @@ def generate_summary(text: str) -> str:
                     '}'
                 )
             },
-            {'role': 'user', 'content': text}
+            {
+                'role': 'user',
+                'content': text
+            }
         ]
     )
     return response['message']['content']
 
-# --- Modified to save FAISS index and chunks JSON TO S3 ---
+
 def build_and_save_faiss_index(chunks: list[str], contract_id: str):
     embeddings = embedding_model.encode(chunks, convert_to_numpy=True).astype('float32')
     index = faiss.IndexFlatL2(embeddings.shape[1])
     index.add(embeddings)
 
-    # Serialize FAISS index to bytes
-    index_bytes = faiss.serialize_index(index)
-    # Upload FAISS index bytes to S3
-    s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=f"indexes/{contract_id}.faiss", Body=index_bytes)
+    # Save locally temporarily
+    local_index_path = os.path.join(INDEX_DIR, f"{contract_id}.faiss")
+    local_meta_path = os.path.join(META_DIR, f"{contract_id}.json")
 
-    # Save chunk metadata JSON to bytes
-    chunks_json_bytes = json.dumps(chunks).encode("utf-8")
-    s3_client.put_object(Bucket=S3_BUCKET_NAME, Key=f"metadata/{contract_id}.json", Body=chunks_json_bytes)
+    faiss.write_index(index, local_index_path)
+    with open(local_meta_path, "w") as f:
+        json.dump(chunks, f)
 
-# --- Modified to load FAISS index and chunk metadata FROM S3 ---
+    # Upload to S3
+    s3.upload_file(local_index_path, S3_BUCKET, f"indexes/{contract_id}.faiss")
+    s3.upload_file(local_meta_path, S3_BUCKET, f"metadata/{contract_id}.json")
+
+    # Optionally delete local files if you want to save space
+    os.remove(local_index_path)
+    os.remove(local_meta_path)
+
+
 def load_faiss_index_and_chunks(contract_id: str):
-    try:
-        index_obj = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=f"indexes/{contract_id}.faiss")
-        index_bytes = index_obj['Body'].read()
-        index = faiss.deserialize_index(index_bytes)
+    # Download index and metadata from S3 to temp files
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_index_path = os.path.join(tmpdir, f"{contract_id}.faiss")
+        local_meta_path = os.path.join(tmpdir, f"{contract_id}.json")
 
-        meta_obj = s3_client.get_object(Bucket=S3_BUCKET_NAME, Key=f"metadata/{contract_id}.json")
-        chunks_json = meta_obj['Body'].read()
-        chunks = json.loads(chunks_json.decode("utf-8"))
+        try:
+            s3.download_file(S3_BUCKET, f"indexes/{contract_id}.faiss", local_index_path)
+            s3.download_file(S3_BUCKET, f"metadata/{contract_id}.json", local_meta_path)
+        except Exception as e:
+            raise FileNotFoundError(f"Could not find FAISS index or metadata in S3 for contract_id={contract_id}: {e}")
 
-        return index, chunks
-    except s3_client.exceptions.NoSuchKey:
-        raise FileNotFoundError(f"No FAISS index or metadata found in S3 for contract_id={contract_id}")
+        index = faiss.read_index(local_index_path)
+        with open(local_meta_path) as f:
+            chunks = json.load(f)
+
+    return index, chunks
+
 
 def search_faiss_index(query_text: str, index, chunks, top_k=3):
     query_embedding = embedding_model.encode(query_text, convert_to_numpy=True).astype('float32').reshape(1, -1)
