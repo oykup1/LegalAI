@@ -1,0 +1,16 @@
+Service Agreement
+
+This Service Agreement (“Agreement”) is made between Alpha Corp (“Provider”) and Beta LLC (“Client”) on July 1, 2025.
+
+1. Services
+Provider agrees to deliver IT consulting services, including system maintenance and troubleshooting, for a period of six (6) months.
+
+2. Payment
+Client shall pay Provider a monthly fee of $2,000, payable within 15 days of receipt of invoice.
+
+3. Termination
+Either party may terminate this Agreement with 30 days’ written notice. Upon termination, Client shall pay for services rendered up to the termination date.
+
+4. Confidentiality
+Both parties agree to keep all confidential information disclosed under this Agreement strictly private and not to disclose it to third parties.
+

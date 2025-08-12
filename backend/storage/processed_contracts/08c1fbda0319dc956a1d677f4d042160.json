@@ -1,0 +1,22 @@
+[
+  {
+    "chunk": "Service Agreement\n\nThis Service Agreement (\u201cAgreement\u201d) is made between Alpha Corp (\u201cProvider\u201d) and Beta LLC (\u201cClient\u201d) on July 1, 2025.",
+    "summary": "{\n  \"clause_type\": \"service agreement\",\n  \"parties_involved\": [\n    \"Alpha Corp (Provider)\",\n    \"Beta LLC (Client)\"\n  ],\n  \"summary\": \"Service Agreement between Alpha Corp and Beta LLC for [service]\",\n  \"biased_toward\": \"Client\",\n  \"risks\": [\"confidentiality risk\", \"data breach risk\"],\n  \"obligations\": [\n    \"Alpha Corp shall provide [service] to Beta LLC\",\n    \"Beta LLC shall use [service] in accordance with the terms of this Agreement\"\n  ],\n  \"duration\": 1,\n  \"is_termination_clause\": false,\n  \"is_confidentiality_clause\": true\n}"
+  },
+  {
+    "chunk": "1. Services\nProvider agrees to deliver IT consulting services, including system maintenance and troubleshooting, for a period of six (6) months.",
+    "summary": "{\n  \"clause_type\": \"Services\",\n  \"parties_involved\": [\n    {\n      \"name\": \"Client\"\n    },\n    {\n      \"name\": \"Provider\"\n    }\n  ],\n  \"summary\": \"IT consulting services to be delivered by the provider for a period of six (6) months.\",\n  \"biased_toward\": \"Client\",\n  \"risks\": [],\n  \"obligations\": [\n    \"To deliver IT consulting services including system maintenance and troubleshooting for a period of six (6) months\"\n  ],\n  \"duration\": \"six (6) months\",\n  \"is_termination_clause\": false,\n  \"is_confidentiality_clause\": false\n}"
+  },
+  {
+    "chunk": "2. Payment\nClient shall pay Provider a monthly fee of $2,000, payable within 15 days of receipt of invoice.",
+    "summary": "{\n  \"clause_type\": \"Payment\",\n  \"parties_involved\": [\"Provider\", \"Client\"],\n  \"summary\": \"$2,000 Monthly Fee for Service\",\n  \"biased_toward\": \"Client\",\n  \"risks\": [],\n  \"obligations\": {\n    \"amount_paid\": \"$2,000\",\n    \"payment_term\": \"15 days\"\n  },\n  \"duration\": \"Monthly\",\n  \"is_termination_clause\": false,\n  \"is_confidentiality_clause\": false\n}"
+  },
+  {
+    "chunk": "3. Termination\nEither party may terminate this Agreement with 30 days\u2019 written notice. Upon termination, Client shall pay for services rendered up to the termination date.",
+    "summary": "{\n  \"clause_type\": \"Termination\",\n  \"parties_involved\": [\n    {\n      \"name\": \"Client\"\n    },\n    {\n      \"name\": \"Provider\"\n    }\n  ],\n  \"summary\": \"Either party may terminate this Agreement with 30 days\u2019 written notice.\",\n  \"biased_toward\": \"Client\",\n  \"risks\": [],\n  \"obligations\": [\n    {\n      \"party\": \"Client\",\n      \"action\": \"pay for services rendered up to the termination date\"\n    }\n  ],\n  \"duration\": 30,\n  \"is_termination_clause\": true,\n  \"is_confidentiality_clause\": false\n}"
+  },
+  {
+    "chunk": "4. Confidentiality\nBoth parties agree to keep all confidential information disclosed under this Agreement strictly private and not to disclose it to third parties.",
+    "summary": "{\n  \"clause_type\": \"Confidentiality\",\n  \"parties_involved\": [\n    {\n      \"party_name\": \"Client\",\n      \"role\": \"Disclosing Party\"\n    },\n    {\n      \"party_name\": \"Provider\",\n      \"role\": \"Receiving Party\"\n    }\n  ],\n  \"summary\": \"Both parties agree to keep confidential information disclosed under this Agreement strictly private.\",\n  \"biased_toward\": \"Neutral\",\n  \"risks\": [\n    \"breach of confidentiality by either party could result in damages or losses\"\n  ],\n  \"obligations\": [\n    \"the Client agrees not to disclose confidential information to third parties without the prior written consent of the Provider\"\n  ],\n  \"duration\": \"\",\n  \"is_termination_clause\": false,\n  \"is_confidentiality_clause\": true\n}"
+  }
+]
