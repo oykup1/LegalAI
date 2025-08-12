@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes import upload, process
+from backend.routes import upload, process
 
 app = FastAPI()
 
