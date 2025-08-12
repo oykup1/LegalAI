@@ -13,6 +13,11 @@ META_DIR = "backend/storage/metadata"
 os.makedirs(INDEX_DIR, exist_ok=True)
 os.makedirs(META_DIR, exist_ok=True)
 
+
+# Explicitly set the base URL so Docker can talk to the host
+ollama_host = "http://host.docker.internal:11434"  # This special DNS points from Docker to your host machine
+ollama_client = ollama.Client(host=ollama_host)
+
 # Initialize tokenizer and embedding model
 tokenizer = tiktoken.get_encoding('cl100k_base')
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -58,7 +63,7 @@ def generate_embedding(text: str) -> np.ndarray:
 
 
 def generate_summary(text: str) -> str:
-    response = ollama.chat(
+    response = ollama_client.chat(
         model='llama3.2:1b',  # You mentioned llama3.2:1b — preserved here
         messages=[
             {

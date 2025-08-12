@@ -16,6 +16,10 @@ RAW_TEXT_DIR = "backend/storage/extracted_texts"
 PROCESSED_DIR = "backend/storage/processed_contracts"
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
+# Explicitly set the base URL so Docker can talk to the host
+ollama_host = "http://host.docker.internal:11434"  # This special DNS points from Docker to your host machine
+ollama_client = ollama.Client(host=ollama_host)
+
 @router.post("/process/{contract_id}")
 def process_contract_route(contract_id: str):
     try:
@@ -64,7 +68,7 @@ def query_contract(contract_id: str, query: str):
     combined_context = "\n".join(relevant_chunks)
 
     # Ask Ollama using retrieved context
-    response = ollama.chat(
+    response = ollama_client.chat(
         model='llama3:8b',
         messages=[
             {'role': 'system', 'content': 'Answer based only on the following contract clauses:'},
