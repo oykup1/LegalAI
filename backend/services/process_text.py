@@ -11,7 +11,7 @@ from backend.ollama_client import ollama_client
 
 # AWS S3 client (uses IAM role or env vars automatically)
 s3 = boto3.client('s3')
-S3_BUCKET = os.environ.get('my-legal-ai-app-bucket')  # Set this env var on EC2 or in Docker
+S3_BUCKET = os.environ["S3_BUCKET_NAME"]
 
 # Local temp directories (used just temporarily)
 INDEX_DIR = "backend/storage/indexes"

@@ -25,5 +25,7 @@ ENV OLLAMA_HOST=http://host.docker.internal:11434
 # Expose FastAPI port
 EXPOSE 8000
 
+ENV S3_BUCKET_NAME=my-legal-ai-app
+
 # Command to run the app
 CMD ["uvicorn", "main.main:app", "--host", "0.0.0.0", "--port", "8000"]

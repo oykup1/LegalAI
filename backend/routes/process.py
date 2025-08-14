@@ -1,5 +1,6 @@
 import os
 import json
+import boto3
 from fastapi import APIRouter, HTTPException
 from backend.ollama_client import ollama_client
 from backend.services.process_text import (
@@ -15,30 +16,38 @@ router = APIRouter()
 RAW_TEXT_DIR = "backend/storage/extracted_texts"  # Keep locally for now
 PROCESSED_DIR = "backend/storage/processed_contracts"
 os.makedirs(PROCESSED_DIR, exist_ok=True)
+s3 = boto3.client('s3')
+S3_BUCKET = os.environ["S3_BUCKET_NAME"]
 
 @router.post("/process/{contract_id}")
 def process_contract_route(contract_id: str):
+    # Download extracted text from S3
     try:
-        return process_contract_logic(contract_id)
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        s3_object = s3.get_object(
+            Bucket=S3_BUCKET,
+            Key=f"extracted_texts/{contract_id}.txt"
+        )
+        text = s3_object["Body"].read().decode("utf-8")
+    except s3.exceptions.NoSuchKey:
+        raise FileNotFoundError(f"No extracted text found in S3 for contract ID: {contract_id}")
 
-def process_contract_logic(contract_id: str):
-    text_path = os.path.join(RAW_TEXT_DIR, f"{contract_id}.txt")
-    if not os.path.exists(text_path):
-        raise FileNotFoundError(f"No extracted text found for contract ID: {contract_id}")
+    # Pass the downloaded text to the logic function
+    return process_contract_logic(contract_id, text)
 
-    with open(text_path, "r", encoding="utf-8") as f:
-        text = f.read()
+def process_contract_logic(contract_id: str, text: str):
 
     chunks = split_into_chunks(text)
     build_and_save_faiss_index(chunks, contract_id)
 
     processed_chunks = [{"chunk": chunk, "summary": generate_summary(chunk)} for chunk in chunks]
-
-    output_path = os.path.join(PROCESSED_DIR, f"{contract_id}.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(processed_chunks, f, indent=2)
+      # Save to S3
+    processed_key = f"processed_contracts/{contract_id}.json"
+    s3.put_object(
+        Bucket=S3_BUCKET,
+        Key=processed_key,
+        Body=json.dumps(processed_chunks, indent=2).encode("utf-8"),
+        ContentType="application/json"
+    )
 
     return {"status": "success", "chunks_processed": len(processed_chunks)}
 
