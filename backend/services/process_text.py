@@ -1,23 +1,17 @@
-import os
-import re
 import json
 import tempfile
 import boto3
 import numpy as np
 import faiss
+import re
+import os
 import tiktoken
 from sentence_transformers import SentenceTransformer
 from backend.ollama_client import ollama_client
 
-# AWS S3 client (uses IAM role or env vars automatically)
+# AWS S3 client
 s3 = boto3.client('s3')
 S3_BUCKET = os.environ["S3_BUCKET_NAME"]
-
-# Local temp directories (used just temporarily)
-INDEX_DIR = "backend/storage/indexes"
-META_DIR = "backend/storage/metadata"
-os.makedirs(INDEX_DIR, exist_ok=True)
-os.makedirs(META_DIR, exist_ok=True)
 
 tokenizer = tiktoken.get_encoding('cl100k_base')
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -56,10 +50,6 @@ def split_into_chunks(text: str, max_tokens=512) -> list[str]:
     return chunks
 
 
-def generate_embedding(text: str) -> np.ndarray:
-    return embedding_model.encode(text, convert_to_numpy=True).astype('float32')
-
-
 def generate_summary(text: str) -> str:
     response = ollama_client.chat(
         model='llama3.2',
@@ -83,10 +73,7 @@ def generate_summary(text: str) -> str:
                     '}'
                 )
             },
-            {
-                'role': 'user',
-                'content': text
-            }
+            {'role': 'user', 'content': text}
         ]
     )
     return response['message']['content']
@@ -97,28 +84,23 @@ def build_and_save_faiss_index(chunks: list[str], contract_id: str):
     index = faiss.IndexFlatL2(embeddings.shape[1])
     index.add(embeddings)
 
-    # Save locally temporarily
-    local_index_path = os.path.join(INDEX_DIR, f"{contract_id}.faiss")
-    local_meta_path = os.path.join(META_DIR, f"{contract_id}.json")
+    # Save to temporary files and immediately upload to S3
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_index_path = f"{tmpdir}/{contract_id}.faiss"
+        local_meta_path = f"{tmpdir}/{contract_id}.json"
 
-    faiss.write_index(index, local_index_path)
-    with open(local_meta_path, "w") as f:
-        json.dump(chunks, f)
+        faiss.write_index(index, local_index_path)
+        with open(local_meta_path, "w") as f:
+            json.dump(chunks, f)
 
-    # Upload to S3
-    s3.upload_file(local_index_path, S3_BUCKET, f"indexes/{contract_id}.faiss")
-    s3.upload_file(local_meta_path, S3_BUCKET, f"metadata/{contract_id}.json")
-
-    # Optionally delete local files if you want to save space
-    os.remove(local_index_path)
-    os.remove(local_meta_path)
+        s3.upload_file(local_index_path, S3_BUCKET, f"indexes/{contract_id}.faiss")
+        s3.upload_file(local_meta_path, S3_BUCKET, f"metadata/{contract_id}.json")
 
 
 def load_faiss_index_and_chunks(contract_id: str):
-    # Download index and metadata from S3 to temp files
     with tempfile.TemporaryDirectory() as tmpdir:
-        local_index_path = os.path.join(tmpdir, f"{contract_id}.faiss")
-        local_meta_path = os.path.join(tmpdir, f"{contract_id}.json")
+        local_index_path = f"{tmpdir}/{contract_id}.faiss"
+        local_meta_path = f"{tmpdir}/{contract_id}.json"
 
         try:
             s3.download_file(S3_BUCKET, f"indexes/{contract_id}.faiss", local_index_path)

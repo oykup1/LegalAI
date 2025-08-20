@@ -23,16 +23,21 @@ S3_BUCKET = os.environ["S3_BUCKET_NAME"]
 def process_contract_route(contract_id: str):
     # Download extracted text from S3
     try:
+        # Download extracted text from S3
         s3_object = s3.get_object(
             Bucket=S3_BUCKET,
             Key=f"extracted_texts/{contract_id}.txt"
         )
         text = s3_object["Body"].read().decode("utf-8")
-    except s3.exceptions.NoSuchKey:
-        raise FileNotFoundError(f"No extracted text found in S3 for contract ID: {contract_id}")
 
-    # Pass the downloaded text to the logic function
-    return process_contract_logic(contract_id, text)
+        # Process the contract
+        return process_contract_logic(contract_id, text)
+
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())  # Logs full stack trace in terminal
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 def process_contract_logic(contract_id: str, text: str):
 
