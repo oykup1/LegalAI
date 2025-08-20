@@ -21,7 +21,8 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy the app code
 COPY . .
 
-ENV OLLAMA_HOST=http://127.0.0.1:11434
+# Point FastAPI to the running Ollama server on the host
+ENV OLLAMA_HOST=http://host.docker.internal:11434
 # Expose FastAPI port
 EXPOSE 8000
 
