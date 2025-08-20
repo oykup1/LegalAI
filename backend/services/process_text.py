@@ -62,7 +62,7 @@ def generate_embedding(text: str) -> np.ndarray:
 
 def generate_summary(text: str) -> str:
     response = ollama_client.chat(
-        model='llama3:8b',
+        model='llama3.2',
         messages=[
             {
                 'role': 'system',
