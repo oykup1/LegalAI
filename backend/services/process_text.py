@@ -52,7 +52,7 @@ def split_into_chunks(text: str, max_tokens=512) -> list[str]:
 
 def generate_summary(text: str) -> str:
     response = ollama_client.chat(
-        model='llama3.2',
+        model='llama3.2:3b-instruct-q4_0',
         messages=[
             {
                 'role': 'system',

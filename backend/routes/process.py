@@ -68,7 +68,7 @@ def query_contract(contract_id: str, query: str):
     combined_context = "\n".join(relevant_chunks)
 
     response = ollama_client.chat(
-        model='llama3.2',
+        model='llama3.2:3b-instruct-q4_0',
         messages=[
             {'role': 'system', 'content': 'Answer based only on the following contract clauses:'},
             {'role': 'user', 'content': f"{combined_context}\n\nQuestion: {query}"}
