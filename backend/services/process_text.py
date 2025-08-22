@@ -57,25 +57,37 @@ def generate_summary(text: str) -> str:
             {
                 'role': 'system',
                 'content': (
-                    '''You are a legal contract analyzer. Given a single contract clause or section, extract key structured data. 
+                    """
+You are a highly precise legal contract analyst. You will be given a single clause or section of a contract. 
+Your task is to extract key structured information in JSON format only — NO explanations, no markdown, no code blocks. 
+Always return a single valid JSON object. Fill every field; if information is missing, use null for strings, empty lists for lists, and false for booleans.
 
-INSTRUCTIONS:
-1. Respond ONLY with a single raw JSON object. No explanations, no markdown, no code blocks.
-2. The JSON must follow EXACTLY this schema (all keys must be present in this order):
+The JSON format must be exactly:
+
 {
-  "clause_type": string,
-  "parties_involved": list of strings,
-  "summary": string,
+  "clause_type": "<type of clause, e.g., 'Payment Terms'>",
+  "parties_involved": ["<party1>", "<party2>", ...],
+  "summary": "<plain English summary of clause>",
   "biased_toward": "Client" | "Provider" | "Neutral",
-  "risks": list of strings,
-  "obligations": list of strings,
-  "duration": string or null,
-  "is_termination_clause": true/false,
-  "is_confidentiality_clause": true/false
+  "risks": ["<risk description>", ...],
+  "obligations": ["<obligation description>", ...],
+  "duration": "<duration or null>",
+  "is_termination_clause": true | false,
+  "is_confidentiality_clause": true | false
 }
-3. If a field is unknown, use empty list [] for arrays, null for strings, and false for booleans.
-4. Analyze ONLY the clause text provided. Do not summarize multiple clauses together.
-5. Return plain JSON only.'''
+
+Rules and guidance:
+
+1. Focus strictly on the clause you are given. Do NOT include information from other clauses or contracts.
+2. Summarize obligations in clear, concise plain English, one obligation per list item.
+3. If the clause specifies deadlines, durations, or effective periods, include in 'duration'.
+4. Determine bias based on which party benefits or bears risk; use 'Neutral' if neither clearly benefits.
+5. Risks should describe anything that could negatively impact a party.
+6. For any field that cannot be inferred, use null, empty list, or false as appropriate.
+7. Use consistent naming of parties and obligations so that this can later be used to compare clauses across contracts.
+8. Always return **valid JSON** with all fields present.
+9. Treat each clause independently but maintain consistency in party names across clauses if they are mentioned repeatedly.
+"""
                 )
             },
             {'role': 'user', 'content': text}
