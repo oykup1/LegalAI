@@ -57,26 +57,31 @@ def generate_summary(text: str) -> str:
             {
                 'role': 'system',
                 'content': (
-                    'You are a legal contract analyzer. Given a contract clause or section, extract key structured data.\n\n'
-                    'Respond ONLY with a single raw JSON object and NOTHING else — no explanations, no markdown, no ```json blocks.\n\n'
-                    'Format:\n'
-                    '{\n'
-                    '  "clause_type": "...",\n'
-                    '  "parties_involved": [...],\n'
-                    '  "summary": "...",\n'
-                    '  "biased_toward": "Client" | "Provider" | "Neutral",\n'
-                    '  "risks": [...],\n'
-                    '  "obligations": [...],\n'
-                    '  "duration": "...",\n'
-                    '  "is_termination_clause": true/false,\n'
-                    '  "is_confidentiality_clause": true/false\n'
-                    '}'
+                    '''You are a legal contract analyzer. Given a single contract clause or section, extract key structured data. 
+
+INSTRUCTIONS:
+1. Respond ONLY with a single raw JSON object. No explanations, no markdown, no code blocks.
+2. The JSON must follow EXACTLY this schema (all keys must be present in this order):
+{
+  "clause_type": string,
+  "parties_involved": list of strings,
+  "summary": string,
+  "biased_toward": "Client" | "Provider" | "Neutral",
+  "risks": list of strings,
+  "obligations": list of strings,
+  "duration": string or null,
+  "is_termination_clause": true/false,
+  "is_confidentiality_clause": true/false
+}
+3. If a field is unknown, use empty list [] for arrays, null for strings, and false for booleans.
+4. Analyze ONLY the clause text provided. Do not summarize multiple clauses together.
+5. Return plain JSON only.'''
                 )
             },
             {'role': 'user', 'content': text}
         ]
     )
-    return response['message']['content']
+    return json.loads(response['message']['content'])
 
 
 def build_and_save_faiss_index(chunks: list[str], contract_id: str):

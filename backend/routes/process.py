@@ -39,13 +39,38 @@ def process_contract_route(contract_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def process_contract_logic(contract_id: str, text: str):
+def validate_clause_json(clause_json: dict) -> dict:
+    defaults = {
+        "clause_type": "",
+        "parties_involved": [],
+        "summary": "",
+        "biased_toward": "Neutral",
+        "risks": [],
+        "obligations": [],
+        "duration": None,
+        "is_termination_clause": False,
+        "is_confidentiality_clause": False
+    }
+    for key, val in defaults.items():
+        if key not in clause_json or clause_json[key] is None:
+            clause_json[key] = val
+    return clause_json
 
+
+def process_contract_logic(contract_id: str, text: str):
     chunks = split_into_chunks(text)
     build_and_save_faiss_index(chunks, contract_id)
 
-    processed_chunks = [{"chunk": chunk, "summary": generate_summary(chunk)} for chunk in chunks]
-      # Save to S3
+    processed_chunks = []
+    for chunk in chunks:
+        clause_json = generate_summary(chunk)
+        clause_json = validate_clause_json(clause_json)  # ensure all fields exist
+        processed_chunks.append({
+            "chunk": chunk,
+            "summary": clause_json
+        })
+
+    # Save processed chunks to S3
     processed_key = f"processed_contracts/{contract_id}.json"
     s3.put_object(
         Bucket=S3_BUCKET,
@@ -55,6 +80,7 @@ def process_contract_logic(contract_id: str, text: str):
     )
 
     return {"status": "success", "chunks_processed": len(processed_chunks)}
+
 
 
 @router.post("/query/{contract_id}")
